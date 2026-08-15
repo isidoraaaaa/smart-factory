@@ -10,4 +10,5 @@ public class ChocolateMachine
     public double LastTemperature { get; set; }
     public MachineStatus Status { get; set; } = MachineStatus.Normal;
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+    public ICollection<TelemetryReading> Readings { get; set; } = new List<TelemetryReading>();
 }

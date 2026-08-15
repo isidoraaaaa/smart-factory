@@ -1,4 +1,6 @@
+using Microsoft.EntityFrameworkCore;
 using SmartFactoryBackend.Infrastructure.Hubs;
+using SmartFactoryBackend.Infrastructure.Persistence;
 using SmartFactoryBackend.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -34,6 +36,8 @@ builder.Services.AddCors(options =>
               .AllowCredentials(); // obavezno za SignalR
     });
 });
+builder.Services.AddDbContext<SmartFactoryDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 var app = builder.Build();
 

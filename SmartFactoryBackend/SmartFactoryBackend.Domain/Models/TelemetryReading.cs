@@ -14,5 +14,6 @@ namespace SmartFactoryBackend.Domain.Models
         public double Temperature { get; set; }
         public MachineStatus Status { get; set; } = MachineStatus.Normal;
         public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+        public ChocolateMachine? Machine { get; set; }
     }
 }
