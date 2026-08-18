@@ -13,6 +13,15 @@ interface ChocolateMachine {
   timestamp: string;
 }
 
+interface TelemetryReading {
+  id: string;
+  machineId: string;
+  temperature: number;
+  status: MachineStatus;
+  timestamp: string;
+}
+
+const API_BASE_URL = "https://localhost:7279/api";
 const HUB_URL = "https://localhost:7279/hubs/telemetry";
 const MAX_LOG_ENTRIES = 5;
 
@@ -20,9 +29,51 @@ function App() {
   const [isConnected, setIsConnected] = useState(false);
   const [machine, setMachine] = useState<ChocolateMachine | null>(null);
   const [history, setHistory] = useState<ChocolateMachine[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const connectionRef = useRef<signalR.HubConnection | null>(null);
 
   useEffect(() => {
+    const loadInitialData = async () => {
+      try {
+        const machinesResponse = await fetch(`${API_BASE_URL}/machines`);
+        const machines: ChocolateMachine[] = await machinesResponse.json();
+
+        if (machines.length === 0) {
+          setIsLoadingHistory(false);
+          return;
+        }
+
+        const firstMachine = machines[0];
+        setMachine(firstMachine);
+
+        const historyResponse = await fetch(
+          `${API_BASE_URL}/machines/${firstMachine.id}/history?take=${MAX_LOG_ENTRIES}`,
+        );
+        const readings: TelemetryReading[] = await historyResponse.json();
+
+        // Mapiraj TelemetryReading u ChocolateMachine oblik da odgovara history state-u
+        const mappedHistory: ChocolateMachine[] = readings.map((r) => ({
+          id: r.id,
+          name: firstMachine.name,
+          lastTemperature: r.temperature,
+          status: r.status,
+          timestamp: r.timestamp,
+        }));
+
+        setHistory(mappedHistory);
+      } catch (err) {
+        console.error("Failed to load initial history:", err);
+      } finally {
+        setIsLoadingHistory(false);
+      }
+    };
+
+    loadInitialData();
+  }, []);
+
+  useEffect(() => {
+    if (isLoadingHistory) return;
+
     const connection = new signalR.HubConnectionBuilder()
       .withUrl(HUB_URL)
       .withAutomaticReconnect()
@@ -50,7 +101,7 @@ function App() {
     return () => {
       connection.stop();
     };
-  }, []);
+  }, [isLoadingHistory]);
 
   const isWarning = machine?.status === "Warning";
 
