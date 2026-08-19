@@ -17,6 +17,7 @@ namespace SmartFactoryBackend.Infrastructure.Persistence
 
         public DbSet<ChocolateMachine> Machines => Set<ChocolateMachine>();
         public DbSet<TelemetryReading> Readings => Set<TelemetryReading>();
+        public DbSet<User> Users => Set<User>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

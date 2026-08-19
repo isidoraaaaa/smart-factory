@@ -1,6 +1,9 @@
 using Microsoft.EntityFrameworkCore;
+using SmartFactoryBackend.Application.Interfaces;
+using SmartFactoryBackend.Application.Services;
 using SmartFactoryBackend.Infrastructure.Hubs;
 using SmartFactoryBackend.Infrastructure.Persistence;
+using SmartFactoryBackend.Infrastructure.Repositories;
 using SmartFactoryBackend.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -38,6 +41,11 @@ builder.Services.AddCors(options =>
 });
 builder.Services.AddDbContext<SmartFactoryDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddScoped<IPasswordHasher,PasswordHasher>();
+builder.Services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+
 
 var app = builder.Build();
 
