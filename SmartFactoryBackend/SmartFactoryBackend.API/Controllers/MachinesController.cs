@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using SmartFactoryBackend.Application.Interfaces;
 using SmartFactoryBackend.Infrastructure.Persistence;
 
 namespace SmartFactoryBackend.API.Controllers
@@ -9,18 +10,18 @@ namespace SmartFactoryBackend.API.Controllers
     [ApiController]
     public class MachinesController : ControllerBase
     {
-        private readonly SmartFactoryDbContext _dbContext;
+        private readonly IMachineService _machineService;
 
-        public MachinesController(SmartFactoryDbContext dbContext)
+        public MachinesController(IMachineService machineService)
         {
-            _dbContext = dbContext;
+            _machineService = machineService;
         }
 
         // GET /api/machines
         [HttpGet]
         public async Task<IActionResult> GetMachines()
         {
-            var machines = await _dbContext.Machines.ToListAsync();
+            var machines = await _machineService.GetMachinesAsync();
             return Ok(machines);
         }
 
@@ -28,17 +29,11 @@ namespace SmartFactoryBackend.API.Controllers
         [HttpGet("{id:guid}/history")]
         public async Task<IActionResult> GetHistory(Guid id, [FromQuery] int take = 5)
         {
-            var machineExists = await _dbContext.Machines.AnyAsync(m => m.Id == id);
-            if (!machineExists)
+            var history = await _machineService.GetHistoryAsync(id,take);
+            if (history == null)
             {
                 return NotFound($"Machine with id {id} not found.");
             }
-
-            var history = await _dbContext.Readings
-                .Where(r => r.MachineId == id)
-                .OrderByDescending(r => r.Timestamp)
-                .Take(take)
-                .ToListAsync();
 
             return Ok(history);
         }

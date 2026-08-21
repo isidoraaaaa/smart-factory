@@ -15,7 +15,6 @@ interface ChocolateMachine {
 
 interface TelemetryReading {
   id: string;
-  machineId: string;
   temperature: number;
   status: MachineStatus;
   timestamp: string;
