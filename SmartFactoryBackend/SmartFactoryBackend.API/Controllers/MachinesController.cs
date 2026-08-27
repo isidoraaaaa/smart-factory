@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SmartFactoryBackend.Application.Interfaces;
@@ -8,6 +9,7 @@ namespace SmartFactoryBackend.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class MachinesController : ControllerBase
     {
         private readonly IMachineService _machineService;
