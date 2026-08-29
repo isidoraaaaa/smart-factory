@@ -20,6 +20,31 @@ namespace SmartFactoryBackend.Infrastructure.Repositories
 
         }
 
+        public async Task AddAsync(ChocolateMachine machine)
+        {
+            _dbContext.Machines.Add(machine);
+            await _dbContext.SaveChangesAsync();
+        }
+
+        public async Task<bool> DeleteAsync(Guid id)
+        {
+            var machine = await _dbContext.Machines.FindAsync(id);
+            if (machine is null)
+            {
+                return false;
+            }
+
+            _dbContext.Machines.Remove(machine);
+            await _dbContext.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> ExistsByNameAsync(string name)
+        {
+            return await _dbContext.Machines
+              .AnyAsync(m => m.Name == name);
+        }
+
         public async Task<List<ChocolateMachine>> GetAllAsync()
         {
              return await _dbContext.Machines.ToListAsync();

@@ -12,5 +12,7 @@ namespace SmartFactoryBackend.Application.Interfaces
     {
         Task<List<ChocolateMachine>> GetMachinesAsync();
         Task<List<TelemetryReadingDTO>?> GetHistoryAsync(Guid machineId, int take);
+        Task<ChocolateMachine> AddMachineAsync(string name);  
+        Task<bool> DeleteMachineAsync(Guid id);
     }
 }

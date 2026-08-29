@@ -39,6 +39,22 @@ namespace SmartFactoryBackend.API.Controllers
 
             return Ok(history);
         }
+        [HttpPost]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> AddMachine([FromBody] AddMachineRequest request)
+        {
+            var machine = await _machineService.AddMachineAsync(request.Name);
+            return CreatedAtAction(nameof(GetMachines), new { id = machine.Id }, machine);
+        }
 
+        [HttpDelete("{id:guid}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> DeleteMachine(Guid id)
+        {
+            var deleted = await _machineService.DeleteMachineAsync(id);
+            return deleted ? NoContent() : NotFound($"Machine with id {id} not found.");
+        }
+
+        public record AddMachineRequest(string Name);
     }
 }

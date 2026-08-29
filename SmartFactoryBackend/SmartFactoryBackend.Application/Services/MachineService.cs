@@ -38,5 +38,28 @@ namespace SmartFactoryBackend.Application.Services
         {
             return await _machineRepository.GetAllAsync();
         }
+
+        public async Task<ChocolateMachine> AddMachineAsync(string name)
+        {
+            var nameTaken = await _machineRepository.ExistsByNameAsync(name);
+
+            if (nameTaken)
+            {
+                throw new InvalidOperationException("Name is already taken.");
+            }
+
+            var machine = new ChocolateMachine
+            {
+                Name = name
+            };
+
+            await _machineRepository.AddAsync(machine);
+            return machine;
+        }
+
+        public async Task<bool> DeleteMachineAsync(Guid id)
+        {
+            return await _machineRepository.DeleteAsync(id);
+        }
     }
 }
