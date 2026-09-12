@@ -103,17 +103,13 @@
 }
 
 .logout-button {
-  padding: 0.5rem 1.1rem;
-  border: none;
-  border-radius: 8px;
-  background-color: transparent;
-  color: #6b7280;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid #fca5a5;
+  border-radius: 6px;
+  background-color: white;
+  color: #dc2626;
   cursor: pointer;
-  font-size: 0.85rem;
-  font-weight: 500;
-  transition:
-    background-color 0.15s ease,
-    color 0.15s ease;
+  font-size: 0.8rem;
 }
 
 .logout-button:hover {
@@ -131,4 +127,17 @@
 
 .history-log tbody tr {
   transition: background-color 0.15s ease;
+}
+
+.back-button {
+  border: none;
+  background-color: transparent;
+  color: #6b7280;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.back-button:hover {
+  background-color: rgba(0, 0, 0, 0.08);
+  border-radius: 4px;
 }

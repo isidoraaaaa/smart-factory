@@ -3,12 +3,15 @@ import * as signalR from "@microsoft/signalr";
 import "./Dashboard.css";
 import type { ChocolateMachine, TelemetryReading } from "../../types/telemetry";
 import { useAuth } from "../../context/useAuth";
+import { useNavigate, useParams } from "react-router-dom";
 
 const API_BASE_URL = "https://localhost:7279/api";
 const HUB_URL = "https://localhost:7279/hubs/telemetry";
 const MAX_LOG_ENTRIES = 5;
 
 export function Dashboard() {
+  const { machineId } = useParams<{ machineId: string }>();
+  const navigate = useNavigate();
   const { token, logout } = useAuth();
 
   const [isConnected, setIsConnected] = useState(false);
@@ -18,6 +21,8 @@ export function Dashboard() {
   const connectionRef = useRef<signalR.HubConnection | null>(null);
 
   useEffect(() => {
+    if (!machineId) return;
+
     const loadInitialData = async () => {
       try {
         const machinesResponse = await fetch(`${API_BASE_URL}/machines`, {
@@ -34,11 +39,17 @@ export function Dashboard() {
           return;
         }
 
-        const firstMachine = machines[0];
-        setMachine(firstMachine);
+        const currentMachine = machines.find((m) => m.id === machineId);
+
+        if (!currentMachine) {
+          navigate("/");
+          return;
+        }
+
+        setMachine(currentMachine);
 
         const historyResponse = await fetch(
-          `${API_BASE_URL}/machines/${firstMachine.id}/history?take=${MAX_LOG_ENTRIES}`,
+          `${API_BASE_URL}/machines/${machineId}/history?take=${MAX_LOG_ENTRIES}`,
           { headers: { Authorization: `Bearer ${token}` } },
         );
         const readings: TelemetryReading[] = await historyResponse.json();
@@ -46,7 +57,7 @@ export function Dashboard() {
         // Mapiraj TelemetryReading u ChocolateMachine oblik da odgovara history state-u
         const mappedHistory: ChocolateMachine[] = readings.map((r) => ({
           id: r.id,
-          name: firstMachine.name,
+          name: currentMachine.name,
           lastTemperature: r.temperature,
           status: r.status,
           timestamp: r.timestamp,
@@ -61,10 +72,10 @@ export function Dashboard() {
     };
 
     loadInitialData();
-  }, [token]);
+  }, [token, navigate, machineId]);
 
   useEffect(() => {
-    if (isLoadingHistory) return;
+    if (isLoadingHistory || !machineId) return;
 
     const connection = new signalR.HubConnectionBuilder()
       .withUrl(HUB_URL, {
@@ -76,6 +87,7 @@ export function Dashboard() {
     connectionRef.current = connection;
 
     connection.on("ReceiveTelemetry", (data: ChocolateMachine) => {
+      if (data.id !== machineId) return;
       setMachine(data);
       setHistory((prev) => [data, ...prev].slice(0, MAX_LOG_ENTRIES));
     });
@@ -95,13 +107,16 @@ export function Dashboard() {
     return () => {
       connection.stop();
     };
-  }, [isLoadingHistory, token]);
+  }, [isLoadingHistory, token, machineId]);
 
   const isWarning = machine?.status === "Warning";
 
   return (
     <div className="app-container">
       <div className="dashboard-header">
+        <button className="back-button" onClick={() => navigate("/")}>
+          ← Back to Machines
+        </button>
         <div className="connection-indicator">
           <span
             className={`status-dot ${isConnected ? "connected" : "disconnected"}`}

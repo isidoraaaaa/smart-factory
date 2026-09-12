@@ -58,11 +58,20 @@ namespace SmartFactoryBackend.Infrastructure.Repositories
 
         public async Task<List<TelemetryReading>> GetHistoryAsync(Guid machineId, int take)
         {
-            return await _dbContext.Readings
-                        .Where(r => r.MachineId == machineId)
-                        .OrderByDescending(r => r.Timestamp)
-                        .Take(take)
-                        .ToListAsync();
+            var history = await _dbContext.Readings.Where(r => r.MachineId == machineId)
+                                                    .OrderByDescending(r => r.Timestamp)
+                                                    .Take(take)
+                                                    .ToListAsync();
+
+            foreach (var r in history)
+            {
+                r.Timestamp = DateTime.SpecifyKind(
+                    r.Timestamp,
+                    DateTimeKind.Utc
+                );
+            }
+
+            return history;
         }
     }
 }

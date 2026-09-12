@@ -19,7 +19,7 @@ public class TelemetrySimulatorService : BackgroundService
 
     private const double MinOptimalTemp = 30.0;
     private const double MaxOptimalTemp = 35.0;
-    private readonly TimeSpan _interval = TimeSpan.FromSeconds(3);
+    private readonly TimeSpan _interval = TimeSpan.FromSeconds(30);
 
     private readonly ChocolateMachine _machine = new()
     {
