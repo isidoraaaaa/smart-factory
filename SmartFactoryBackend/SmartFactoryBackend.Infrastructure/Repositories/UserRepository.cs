@@ -25,10 +25,29 @@ namespace SmartFactoryBackend.Infrastructure.Repositories
             await _dbContext.SaveChangesAsync();
         }
 
+        public async Task<bool> DeleteAsync(Guid id)
+        {
+            var user = await _dbContext.Users.FindAsync(id);
+            if (user is null) return false;
+            _dbContext.Users.Remove(user);
+            await _dbContext.SaveChangesAsync();
+            return true;
+        }
+
         public async Task<bool> ExistsByUsernameAsync(string username)
         {
             return await _dbContext.Users
                 .AnyAsync(u => u.Username == username);
+        }
+
+        public async Task<List<User>> GetAllAsync()
+        {
+            return await _dbContext.Users.ToListAsync();
+        }
+
+        public async Task<User?> GetByIdAsync(Guid id)
+        {
+            return await _dbContext.Users.FindAsync(id);
         }
 
         public async Task<User?> GetByUsernameAsync(string username)

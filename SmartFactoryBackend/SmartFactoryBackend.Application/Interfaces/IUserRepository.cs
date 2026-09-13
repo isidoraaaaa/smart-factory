@@ -12,5 +12,8 @@ namespace SmartFactoryBackend.Application.Interfaces
         Task<bool> ExistsByUsernameAsync(string username);
         Task<User?> GetByUsernameAsync(string username);
         Task AddUserAsync(User user);
+        Task<List<User>> GetAllAsync(); 
+        Task<User?> GetByIdAsync(Guid id);   
+        Task<bool> DeleteAsync(Guid id);
     }
 }
