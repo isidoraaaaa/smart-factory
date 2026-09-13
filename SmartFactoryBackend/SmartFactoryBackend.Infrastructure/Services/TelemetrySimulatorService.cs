@@ -21,10 +21,7 @@ public class TelemetrySimulatorService : BackgroundService
     private const double MaxOptimalTemp = 35.0;
     private readonly TimeSpan _interval = TimeSpan.FromSeconds(30);
 
-    private readonly ChocolateMachine _machine = new()
-    {
-        Name = "Chocolate Line #1"
-    };
+    private readonly List<ChocolateMachine> _machines;
 
     public TelemetrySimulatorService(
         IHubContext<TelemetryHub> hubContext,
@@ -33,95 +30,99 @@ public class TelemetrySimulatorService : BackgroundService
         _hubContext = hubContext;
         _scopeFactory = scopeFactory;
         _logger = logger;
+        _machines = new List<ChocolateMachine>();
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("Telemetry simulator started for {MachineName}", _machine.Name);
+        var runningMachineIds = new HashSet<Guid>();
+        var tasks = new List<Task>();
 
-        await EnsureMachineExistsAsync(stoppingToken);
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            using (var scope = _scopeFactory.CreateScope())
+            {
+                var dbContext = scope.ServiceProvider.GetRequiredService<SmartFactoryDbContext>();
+                var currentMachines = await dbContext.Machines.ToListAsync(stoppingToken);
 
+                foreach (var machine in currentMachines)
+                {
+                    if (!runningMachineIds.Contains(machine.Id))
+                    {
+                        runningMachineIds.Add(machine.Id);
+                        tasks.Add(SimulateMachineTelemetryAsync(machine, stoppingToken));
+                        _logger.LogInformation("Started simulating new machine: {Name}", machine.Name);
+                    }
+                }
+            }
+
+            await Task.Delay(TimeSpan.FromSeconds(3), stoppingToken);
+        }
+
+        await Task.WhenAll(tasks);
+    }
+
+    private async Task SimulateMachineTelemetryAsync(ChocolateMachine machine, CancellationToken stoppingToken)
+    {
+        _logger.LogInformation("Telemetry simulator started for {MachineName}", machine.Name);
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
-                GenerateTelemetry();
-
-                await SaveReadingAsync(stoppingToken);
-
+                GenerateTelemetry(machine);
+                await SaveReadingAsync(machine, stoppingToken);
                 await _hubContext.Clients.All.SendAsync(
                     "ReceiveTelemetry",
-                    _machine,
+                    machine,
                     cancellationToken: stoppingToken);
-
                 _logger.LogInformation(
-                    "Emitted telemetry: {Temp}°C - {Status}",
-                    _machine.LastTemperature,
-                    _machine.Status);
+                    "Emitted telemetry for {MachineName}: {Temp}°C - {Status}",
+                    machine.Name,
+                    machine.LastTemperature,
+                    machine.Status);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error while generating/emitting telemetry");
+                _logger.LogError(ex, "Error while generating/emitting telemetry for {MachineName}", machine.Name);
             }
-
             await Task.Delay(_interval, stoppingToken);
         }
     }
 
-    private async Task EnsureMachineExistsAsync(CancellationToken stoppingToken)
-    {
-        using var scope = _scopeFactory.CreateScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<SmartFactoryDbContext>();
-
-        var existing = await dbContext.Machines
-            .FirstOrDefaultAsync(m => m.Name == _machine.Name, stoppingToken);
-
-        if (existing is null)
-        {
-            dbContext.Machines.Add(_machine);
-            await dbContext.SaveChangesAsync(stoppingToken);
-        }
-        else
-        {
-            // Koristi postojeći Id iz baze da FK veza radi ispravno
-            _machine.Id = existing.Id;
-        }
-    }
-
-    private async Task SaveReadingAsync(CancellationToken stoppingToken)
+    private async Task SaveReadingAsync(ChocolateMachine machine, CancellationToken stoppingToken)
     {
         using var scope = _scopeFactory.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<SmartFactoryDbContext>();
 
         var reading = new TelemetryReading
         {
-            MachineId = _machine.Id,
-            Temperature = _machine.LastTemperature,
-            Status = _machine.Status,
-            Timestamp = _machine.Timestamp
+            MachineId = machine.Id,
+            Temperature = machine.LastTemperature,
+            Status = machine.Status,
+            Timestamp = machine.Timestamp
         };
 
         dbContext.Readings.Add(reading);
 
-        var machineEntity = await dbContext.Machines.FindAsync(new object[] { _machine.Id }, stoppingToken);
+        var machineEntity = await dbContext.Machines.FindAsync(new object[] { machine.Id }, stoppingToken);
         if (machineEntity is not null)
         {
-            machineEntity.LastTemperature = _machine.LastTemperature;
-            machineEntity.Status = _machine.Status;
-            machineEntity.Timestamp = _machine.Timestamp;
+            machineEntity.LastTemperature = machine.LastTemperature;
+            machineEntity.Status = machine.Status;
+            machineEntity.Timestamp = machine.Timestamp;
         }
 
         await dbContext.SaveChangesAsync(stoppingToken);
     }
 
 
-    private void GenerateTelemetry()
+    private void GenerateTelemetry(ChocolateMachine machine)
     {
         double temperature = Math.Round(_random.NextDouble() * (40.0 - 25.0) + 25.0, 1);
 
-        _machine.LastTemperature = temperature;
-        _machine.Timestamp = DateTime.UtcNow;
-        _machine.Status = (temperature < MinOptimalTemp || temperature > MaxOptimalTemp)
+        machine.LastTemperature = temperature;
+        machine.Timestamp = DateTime.UtcNow;
+        machine.Status = (temperature < MinOptimalTemp || temperature > MaxOptimalTemp)
             ? MachineStatus.Warning
             : MachineStatus.Normal;
     }
