@@ -51,7 +51,7 @@ namespace SmartFactoryBackend.Infrastructure.Repositories
         }
 
 
-        public async Task<ChocolateMachine?> GetByIdAsync(Guid id)
+        public async Task<ChocolateMachine> GetByIdAsync(Guid id)
         {
             return await _dbContext.Machines.FindAsync(id);
         }

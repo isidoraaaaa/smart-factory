@@ -11,6 +11,7 @@ namespace SmartFactoryBackend.Application.Interfaces
     public interface IMachineService
     {
         Task<List<ChocolateMachine>> GetMachinesAsync();
+        Task<ChocolateMachine?> GetMachineAsync(Guid id);
         Task<List<TelemetryReadingDTO>?> GetHistoryAsync(Guid machineId, int take);
         Task<ChocolateMachine> AddMachineAsync(string name);  
         Task<bool> DeleteMachineAsync(Guid id);

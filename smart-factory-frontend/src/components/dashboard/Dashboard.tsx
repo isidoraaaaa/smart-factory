@@ -4,15 +4,15 @@ import "./Dashboard.css";
 import type { ChocolateMachine, TelemetryReading } from "../../types/telemetry";
 import { useAuth } from "../../context/useAuth";
 import { useNavigate, useParams } from "react-router-dom";
+import { getMachine, getMachineHistory } from "../../services/machinesService";
 
-const API_BASE_URL = "https://localhost:7279/api";
 const HUB_URL = "https://localhost:7279/hubs/telemetry";
 const MAX_LOG_ENTRIES = 5;
 
 export function Dashboard() {
   const { machineId } = useParams<{ machineId: string }>();
   const navigate = useNavigate();
-  const { token, logout } = useAuth();
+  const { token } = useAuth();
 
   const [isConnected, setIsConnected] = useState(false);
   const [machine, setMachine] = useState<ChocolateMachine | null>(null);
@@ -25,39 +25,28 @@ export function Dashboard() {
 
     const loadInitialData = async () => {
       try {
-        const machinesResponse = await fetch(`${API_BASE_URL}/machines`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const machine: ChocolateMachine | null = await getMachine(
+          token,
+          machineId,
+        );
 
-        if (!machinesResponse.ok) {
-          throw new Error("Failed to load machines");
-        }
-        const machines: ChocolateMachine[] = await machinesResponse.json();
-
-        if (machines.length === 0) {
+        if (machine == null) {
           setIsLoadingHistory(false);
-          return;
-        }
-
-        const currentMachine = machines.find((m) => m.id === machineId);
-
-        if (!currentMachine) {
           navigate("/");
           return;
         }
 
-        setMachine(currentMachine);
-
-        const historyResponse = await fetch(
-          `${API_BASE_URL}/machines/${machineId}/history?take=${MAX_LOG_ENTRIES}`,
-          { headers: { Authorization: `Bearer ${token}` } },
+        setMachine(machine);
+        const readings: TelemetryReading[] = await getMachineHistory(
+          token,
+          machineId,
+          MAX_LOG_ENTRIES,
         );
-        const readings: TelemetryReading[] = await historyResponse.json();
 
         // Mapiraj TelemetryReading u ChocolateMachine oblik da odgovara history state-u
         const mappedHistory: ChocolateMachine[] = readings.map((r) => ({
           id: r.id,
-          name: currentMachine.name,
+          name: machine.name,
           lastTemperature: r.temperature,
           status: r.status,
           timestamp: r.timestamp,
@@ -123,9 +112,6 @@ export function Dashboard() {
           />
           <span>{isConnected ? "Connected" : "Disconnected"}</span>
         </div>
-        <button className="logout-button" onClick={logout}>
-          Logout
-        </button>
       </div>
 
       <div className={`dashboard-panel ${isWarning ? "warning" : "normal"}`}>

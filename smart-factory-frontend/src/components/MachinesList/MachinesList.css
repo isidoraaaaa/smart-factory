@@ -5,8 +5,10 @@
 }
 .machines-list-container p {
   text-align: center;
-  color: #6b7280;
   font-size: 1rem;
+}
+.machines-list-info {
+  color: #6b7280;
 }
 .machines-list-header {
   display: flex;
@@ -50,7 +52,7 @@
 }
 
 .machines-list-error {
-  color: #dc2626;
+  color: #ef4444;
   font-size: 0.85rem;
   margin-bottom: 1rem;
 }

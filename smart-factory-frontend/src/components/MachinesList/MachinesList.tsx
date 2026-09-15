@@ -3,11 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
 import type { ChocolateMachine } from "../../types/telemetry";
 import "./MachinesList.css";
-
-const API_BASE_URL = "https://localhost:7279/api";
+import {
+  addMachine,
+  deleteMachine,
+  getMachines,
+} from "../../services/machinesService";
 
 export function MachinesList() {
-  const { token, role, logout } = useAuth();
+  const { token, role } = useAuth();
   const navigate = useNavigate();
 
   const [machines, setMachines] = useState<ChocolateMachine[]>([]);
@@ -20,10 +23,7 @@ export function MachinesList() {
   const fetchMachines = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/machines`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data: ChocolateMachine[] = await response.json();
+      const data: ChocolateMachine[] = await getMachines(token);
       setMachines(data);
     } catch (err) {
       console.error("Failed to load machines:", err);
@@ -40,24 +40,11 @@ export function MachinesList() {
     e.preventDefault();
     setError(null);
 
-    if (!newMachineName.trim()) {
-      return;
-    }
-
     try {
-      const response = await fetch(`${API_BASE_URL}/machines`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ name: newMachineName }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to add machine.");
+      if (!newMachineName.trim()) {
+        throw new Error("Machine name cannot be empty.");
       }
-
+      await addMachine(token, newMachineName);
       setNewMachineName("");
       await fetchMachines();
     } catch (err) {
@@ -67,15 +54,7 @@ export function MachinesList() {
 
   const handleDeleteMachine = async (id: string) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/machines/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to delete machine.");
-      }
-
+      await deleteMachine(token, id);
       await fetchMachines();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
@@ -86,9 +65,6 @@ export function MachinesList() {
     <div className="machines-list-container">
       <div className="machines-list-header">
         <h1>Machines</h1>
-        <button className="logout-button" onClick={logout}>
-          Logout
-        </button>
       </div>
 
       {isAdmin && (
@@ -106,9 +82,9 @@ export function MachinesList() {
       {error && <p className="machines-list-error">{error}</p>}
 
       {isLoading ? (
-        <p>Loading machines...</p>
+        <p className="machines-list-info">Loading machines...</p>
       ) : machines.length === 0 ? (
-        <p>No machines were found.</p>
+        <p className="machines-list-info">No machines were found.</p>
       ) : (
         <ul className="machines-list">
           {machines.map((machine) => (

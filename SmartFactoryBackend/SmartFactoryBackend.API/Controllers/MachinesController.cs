@@ -27,6 +27,14 @@ namespace SmartFactoryBackend.API.Controllers
             return Ok(machines);
         }
 
+        // GET /api/machines/{id}
+        [HttpGet("{id:guid}")]
+        public async Task<IActionResult> GetMachine(Guid id)
+        {
+            var machine = await _machineService.GetMachineAsync(id);
+            return machine is null ?  NotFound($"Machine with id {id} not found.") :  Ok(machine);
+        }
+
         // GET /api/machines/{id}/history?take=5
         [HttpGet("{id:guid}/history")]
         public async Task<IActionResult> GetHistory(Guid id, [FromQuery] int take = 5)

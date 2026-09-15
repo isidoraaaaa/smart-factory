@@ -39,6 +39,11 @@ namespace SmartFactoryBackend.Application.Services
             return await _machineRepository.GetAllAsync();
         }
 
+        public async Task<ChocolateMachine?> GetMachineAsync(Guid id)
+        {
+            return await _machineRepository.GetByIdAsync(id);
+        }
+
         public async Task<ChocolateMachine> AddMachineAsync(string name)
         {
             var nameTaken = await _machineRepository.ExistsByNameAsync(name);

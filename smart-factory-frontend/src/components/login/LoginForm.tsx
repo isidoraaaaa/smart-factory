@@ -3,9 +3,11 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { useAuth } from "../../context/useAuth";
 import "./LoginForm.css";
+import { useNavigate } from "react-router-dom";
 
 export function LoginForm() {
   const { login, register } = useAuth();
+  const navigate = useNavigate();
 
   const [mode, setMode] = useState<"login" | "register">("login");
   const [username, setUsername] = useState("");
@@ -31,8 +33,10 @@ export function LoginForm() {
     try {
       if (mode === "login") {
         await login({ username, password });
+        navigate("/");
       } else {
         await register({ name, lastname, username, email, password });
+        navigate("/");
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
