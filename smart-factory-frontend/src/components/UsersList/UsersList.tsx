@@ -6,14 +6,12 @@ import { deleteUser, getUsers } from "../../services/usersService";
 import "./UsersList.css";
 
 export function UsersList() {
-  const { token, role } = useAuth();
+  const { token } = useAuth();
   const navigate = useNavigate();
 
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const isAdmin = role === "Admin";
 
   const fetchUsers = async () => {
     setIsLoading(true);
@@ -64,14 +62,12 @@ export function UsersList() {
                 <span className={`user-item-usertype `}>{user.userType}</span>
               </div>
 
-              {isAdmin && (
-                <button
-                  className="delete-user-button"
-                  onClick={() => handleDeleteUser(user.id)}
-                >
-                  Delete
-                </button>
-              )}
+              <button
+                className="delete-user-button"
+                onClick={() => handleDeleteUser(user.id)}
+              >
+                Delete
+              </button>
             </li>
           ))}
         </ul>
