@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
 import type { ChocolateMachine } from "../../types/telemetry";
@@ -8,6 +8,9 @@ import {
   deleteMachine,
   getMachines,
 } from "../../services/machinesService";
+import * as signalR from "@microsoft/signalr";
+
+const HUB_URL = "https://localhost:7279/hubs/telemetry";
 
 export function MachinesList() {
   const { token, role } = useAuth();
@@ -20,20 +23,48 @@ export function MachinesList() {
 
   const isAdmin = role === "Admin";
 
-  const fetchMachines = async () => {
-    setIsLoading(true);
+  const fetchMachines = useCallback(async () => {
     try {
       const data: ChocolateMachine[] = await getMachines(token);
       setMachines(data);
     } catch (err) {
       console.error("Failed to load machines:", err);
-    } finally {
-      setIsLoading(false);
     }
-  };
+  }, [token]);
 
   useEffect(() => {
-    fetchMachines();
+    const loadMachines = async () => {
+      try {
+        await fetchMachines();
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadMachines();
+  }, [fetchMachines]);
+
+  useEffect(() => {
+    const connection = new signalR.HubConnectionBuilder()
+      .withUrl(HUB_URL, {
+        accessTokenFactory: () => token ?? "",
+      })
+      .withAutomaticReconnect()
+      .build();
+
+    connection.on("ReceiveTelemetry", (data: ChocolateMachine) => {
+      setMachines((prev) =>
+        prev.map((m) => (m.id === data.id ? { ...m, ...data } : m)),
+      );
+    });
+
+    connection
+      .start()
+      .catch((err) => console.error("SignalR connection error:", err));
+
+    return () => {
+      connection.stop();
+    };
   }, [token]);
 
   const handleAddMachine = async (e: React.FormEvent) => {
